@@ -57,7 +57,19 @@ target_include_directories(
     "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/export>"
 )
 
-target_compile_features(crypto_tools_crypto_tools PUBLIC cxx_std_20)
+include(FetchContent)
+
+FetchContent_Declare(
+    expected
+    GIT_REPOSITORY https://github.com/TartanLlama/expected
+    GIT_TAG "v1.0.0"
+)
+
+FetchContent_MakeAvailable(expected)
+
+target_link_libraries(crypto_tools_crypto_tools PUBLIC expected)
+
+target_compile_features(crypto_tools_crypto_tools PUBLIC cxx_std_23)
 
 # ---- Install rules ----
 
