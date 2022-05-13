@@ -6,7 +6,7 @@
 
 #include "crypto_tools/crypto_tools_export.hpp"
 
-CRYPTO_TOOLS_EXPORT bool is_prime(unsigned long long n);
+CRYPTO_TOOLS_EXPORT bool is_prime(unsigned long long n, unsigned long long k);
 
 enum class CRYPTO_TOOLS_EXPORT generate_error
 {
