@@ -6,46 +6,46 @@
 
 #include "crypto_tools/crypto_tools.hpp"
 
-static auto& get_seeded_random_device()
+auto get_crypto_safe_random_numder()
 {
   static std::random_device rd;
-  static std::mt19937_64 rd_mt(rd());
-  return rd_mt;
+  return rd();
 }
+
 /*
-static constexpr unsigned long long mod_pow(unsigned long long x,
-                                            unsigned long long y,
-                                            unsigned long long p)
+ * Calculate the number of trial divisions that gives the best speed in
+ * combination with Miller-Rabin prime test, based on the sized of the prime.
+ */
+static int calc_trial_divisions(int bits)
 {
-  auto res = 1ull;  // Initialize result
-  x = x % p;  // Update x if it is more than or
-              // equal to p
-  while (y > 0) {
-    // If y is odd, multiply x with result
-    if (y & 1)
-      res = (res * x) % p;
-
-    // y must be even now
-    y = y >> 1;  // y = y/2
-    x = (x * x) % p;
-  }
-  return res;
+  if (bits <= 512)
+    return 64;
+  else if (bits <= 1024)
+    return 128;
+  else if (bits <= 2048)
+    return 384;
+  else if (bits <= 4096)
+    return 1024;
+  return 2048;
 }
-*/
 
-static constexpr unsigned long long mod_pow(unsigned long long num,
-                                            unsigned long long pow,
-                                            unsigned long long mod)
+unsigned long long mod_pow(unsigned long long a,
+                           unsigned long long b,
+                           unsigned long long c)
 {
-  unsigned long long test;
-  unsigned long long n = num;
-  for (test = 1; pow; pow >>= 1) {
-    if (pow & 1)
-      test = ((test % mod) * (n % mod)) % mod;
-    n = ((n % mod) * (n % mod)) % mod;
-  }
+  unsigned long long x(1), y(a);
+  unsigned long long result(0);
 
-  return test;
+  while (b > 0) {
+    if (b & 1) {
+      result = x * y;
+      x = result % c;
+    }
+    result = y * y;
+    y = result % c;
+    b >>= 1;
+  }
+  return x % c;
 }
 
 // Function to return a^n
@@ -54,58 +54,10 @@ static constexpr unsigned long long fast_pow2(unsigned long long n)
   return (1ull << n);
 }
 
-static unsigned long long miller_rabin(unsigned long long n,
-                                       unsigned long long k)
+static constexpr bool is_small_prime(unsigned long long n)
 {
-  // find r and s
-  auto s = 0ull;
-  auto r = n - 1;
-  while (r & 1 == 0) {
-    ++s;
-    r = r / 2;
-  }
-  // do k tests
-  auto dist = std::uniform_int_distribution<unsigned long long> {2, n - 1};
-  for (int i = 0; i < k; ++k) {
-    auto a = dist(get_seeded_random_device());
-    auto x = mod_pow(a, r, n);
-    if (x != 1 && x != n - 1) {
-      auto j = 1ull;
-      while (j < s && x != n - 1) {
-        x = mod_pow(x, 2, n);
-        if (x == 1)
-          return false;
-        ++j;
-      }
-      if (x != n - 1)
-        return false;
-    }
-  }
-
-  return true;
-}
-
-bool is_prime(unsigned long long n, unsigned long long k = 128)
-{
-  /*
-  Test if a number is prime        Args:
-          n -- int -- the number to test
-          k -- int -- the number of tests to do        return True if n is prime
-  */
-  // Test if n is not even.
-  // But care, 2 is prime !
-  if (n == 2 || n == 3) {
-    return true;
-  }
-  if (n <= 1 || n % 2 == 0) {
-    return false;
-  }
-
-  // lowPrimes is all primes (sans 2, which is covered by the bitwise and
-  // operator) under 1000. taking n modulo each lowPrime allows us to remove a
-  // huge chunk of composite numbers from our potential pool without resorting
-  // to Rabin-Miller
-  static constexpr unsigned long long low_primes[] = {
+  // low_primes is all first 2048 primes
+  constexpr unsigned long long low_primes[] = {
       3,     5,     7,     11,    13,    17,    19,    23,    29,    31,
       37,    41,    43,    47,    53,    59,    61,    67,    71,    73,
       79,    83,    89,    97,    101,   103,   107,   109,   113,   127,
@@ -310,60 +262,222 @@ bool is_prime(unsigned long long n, unsigned long long k = 128)
       17489, 17491, 17497, 17509, 17519, 17539, 17551, 17569, 17573, 17579,
       17581, 17597, 17599, 17609, 17623, 17627, 17657, 17659, 17669, 17681,
       17683, 17707, 17713, 17729, 17737, 17747, 17749, 17761, 17783, 17789,
-      17791, 17807, 17827, 17837, 17839, 17851, 17863};
+      17791, 17807, 17827, 17837, 17839, 17851, 17863, 17881};  // size 2048
+  //, 17891, 17903};
 
-  static constexpr auto low_primes_arr = std::to_array(low_primes);
-
-  if (n >= 3) {
-    if (n & 1 != 0) {
-      for (auto p : low_primes_arr) {
-        if (n == p) {
-          return true;
-        }
-        if (n % p == 0) {
-          return false;
-        }
-      }
-
-      return miller_rabin(n, k);
-    }
+  for (std::size_t i = 0; i < sizeof(low_primes) / sizeof(*low_primes); ++i) {
+    if (n == low_primes[i])
+      return true;
   }
   return false;
 }
 
-static unsigned long long generate_prime_candidate(unsigned long long length)
+static constexpr bool check_small_factors(unsigned long long n)
 {
+  constexpr unsigned long long small_factors1[] = {
+      3ull, 5ull, 7ull, 11ull, 13ull, 17ull, 19ull, 23ull};
+  constexpr unsigned long long pp1 = 223092870ull;
+
+  unsigned long long m1 = n % pp1;
+
+  for (int i = 0; i < sizeof(small_factors1) / sizeof(small_factors1[0]); ++i) {
+    assert(pp1 % small_factors1[i] == 0);
+    if (m1 % small_factors1[i] == 0)
+      return false;
+  }
+
+  static constexpr unsigned long long small_factors2[] = {
+      29ull, 31ull, 37ull, 41ull, 43ul, 47ull};
+  static constexpr unsigned long long pp2 = 2756205443ull;
+
+  m1 = n % pp2;
+
+  for (int i = 0; i < sizeof(small_factors2) / sizeof(small_factors2[0]); ++i) {
+    assert(pp2 % small_factors2[i] == 0);
+    if (m1 % small_factors2[i] == 0)
+      return false;
+  }
+
+  static constexpr unsigned long long small_factors3[] = {
+      53ull, 59ull, 61ull, 67ull, 71ul};
+  static constexpr unsigned long long pp3 = 907383479ull;
+
+  m1 = n % pp3;
+
+  for (int i = 0; i < sizeof(small_factors3) / sizeof(small_factors3[0]); ++i) {
+    assert(pp3 % small_factors3[i] == 0);
+    if (m1 % small_factors3[i] == 0)
+      return false;
+  }
+
+  static constexpr unsigned long long small_factors4[] = {
+      73ull, 79ull, 83ull, 89ull, 97ull};
+  static constexpr unsigned long long pp4 = 4132280413ull;
+
+  m1 = n % pp4;
+
+  for (int i = 0; i < sizeof(small_factors4) / sizeof(small_factors4[0]); ++i) {
+    assert(pp4 % small_factors4[i] == 0);
+    if (m1 % small_factors4[i] == 0)
+      return false;
+  }
+
+  static constexpr unsigned long long small_factors5[6][4] = {
+      {101ull, 103ull, 107ull, 109ull},
+      {113ull, 127ull, 131ull, 137ull},
+      {139ull, 149ull, 151ull, 157ull},
+      {163ull, 167ull, 173ull, 179ull},
+      {181ull, 191ull, 193ull, 197ull},
+      {199ull, 211ull, 223ull, 227ull}};
+  static constexpr unsigned long long pp5[6] = {
+      121330189ull,
+      113ull * 127ull * 131ull * 137ull,
+      139ull * 149ull * 151ull * 157ull,
+      163ull * 167ull * 173ull * 179ull,
+      181ull * 191ull * 193ull * 197ull,
+      199ull * 211ull * 223ull * 227ull};
+
+  for (int k = 0; k < sizeof(pp5) / sizeof(*pp5); ++k) {
+    m1 = n % pp5[k];
+
+    for (int i = 0; i < 4; ++i) {
+      assert(pp5[k] % small_factors5[k][i] == 0);
+      if (m1 % small_factors5[k][i] == 0)
+        return false;
+    }
+  }
+  return true;
+}
+
+bool bit_test(unsigned long long val, std::size_t index)
+{
+  unsigned long long mask = 1;
+  if (index >= sizeof(unsigned long long) * 8)
+    return 0;
+  if (index)
+    mask <<= index;
+  return val & mask;
+}
+
+unsigned long long lsb(unsigned long long val)
+{
+  assert(val != 0);
+
+  unsigned long long result = 0;
+  while (!(val & 1ull)) {
+    val >>= 1;
+    ++result;
+  }
+  return result;
+}
+
+// This function is called for all k trials. It returns
+// false if n is composite and returns true if n is
+// probably prime.
+// d is an odd number such that  d*2<sup>r</sup> = n-1
+// for some r >= 1
+template<class Engine>
+bool is_prime(unsigned long long n, unsigned long long length, Engine&& gen)
+{
+  if (n == 2) {
+    return true;  // Trivial special case.
+  }
+  if (bit_test(n, 0) == 0) {
+    return false;  // n is even
+  }
+  if (n <= 17881) {
+    return is_small_prime(n);
+  }
   /*
-  Generate an odd integer randomly
-  Args:
-  length: the length of the number to generate, in bits
-  return a integer
+  if (!check_small_factors(n)) {
+    std::cout << "small factors ? " << n << std::endl;
+    return false;
+  }
   */
 
-  assert(length <= sizeof(unsigned long long) * 8);
+  unsigned long long nm1 = n - 1;
 
-  // generate random number with k bits
-  auto dist = std::uniform_int_distribution<unsigned long long> {
-      fast_pow2(1), fast_pow2(length)};
-  auto p = dist(get_seeded_random_device());
-  // apply a mask to set MSB and LSB to 1
-  p |= ((1 << length) - 1) | 1;
-  std::cout << "p = " << p << std::endl;
-  return p;
+  //
+  // Begin with a single Fermat test - it excludes a lot of candidates:
+  //
+  // We know n is greater than this, as we've excluded small factors
+  unsigned long long q(17882), x, y;
+  x = mod_pow(q, nm1, n);
+
+  if (x != 1ull) {
+    std::cout << "mod_pow(" << q << ", " << nm1 << ", " << n << ") = " << x
+              << std::endl;
+  }
+  if (x != 1ull)
+    return false;
+
+  q = n - 1;
+  unsigned long long k = lsb(q);
+  q >>= k;
+
+  std::uniform_int_distribution<unsigned long long> dist(2, n - 2);
+
+  //
+  // Execute the trials:
+  //
+  std::cout << "executing trials..." << std::endl;
+  auto trials = calc_trial_divisions(length);
+  for (int i = 0; i < trials; ++i) {
+    x = dist(std::forward<Engine>(gen));
+    y = mod_pow(x, q, n);
+    unsigned long long j = 0ull;
+    while (true) {
+      if (y == nm1)
+        break;
+      if (y == 1) {
+        if (j == 0)
+          break;
+        return false;  // test failed
+      }
+      if (++j == k)
+        return false;  // failed
+      y = mod_pow(y, 2, n);
+    }
+  }
+  return true;  // Yeheh! probably prime.
+}
+
+static expected_unsigned_long_long generate_prime_candidate(
+    unsigned long long length, bool safe = false)
+{
+  assert(length <= sizeof(unsigned long long) * 8);
+  // auto gen = std::mt19937_64 {859469414352197132};
+  auto gen = std::mt19937_64 {std::random_device {}()};
+  auto gen2 =
+      std::independent_bits_engine<std::mt19937_64, 64, unsigned long long> {
+          gen};
+
+  for (unsigned i = 0; i < 100000; ++i) {
+    unsigned long long n = gen();
+    // set low/high bytes to remove even-ness
+    n |= (1ull << (length - 1)) | 1;
+
+    // std::cout << "candidate: " << n << std::endl;
+    if (is_prime(n, length, gen2)) {
+      // Value n is probably prime, see if (n-1)/2 is also prime:
+      std::cout << "We have a probable prime with value: " << std::hex
+                << std::showbase << n << std::endl;
+      if (safe && is_prime((n - 1) / 2, length, gen2)) {
+        std::cout << "We have a safe prime with value: " << std::hex
+                  << std::showbase << n << std::endl;
+        return n;
+      } else {
+        return n;
+      }
+    }
+  }
+  std::cout << "Ooops, no safe primes were found - probably a bad choice of "
+               "seed values!"
+            << std::endl;
+  return tl::unexpected {generate_error::failure_after_too_many_tries};
 }
 
 expected_unsigned_long_long generate_large_prime(unsigned long long length = 64)
 {
-  unsigned long long p = 4;  // prime
-  auto r = 100 * (std::log2(length) + 1);  // number of attempts max
-  auto r_ = 0;
-  do {
-    p = generate_prime_candidate(length);
-  } while (not is_prime(p, 128) && r_++ < r);
-
-  if (r_ >= r)
-    return tl::unexpected {generate_error::failure_after_too_many_tries};
-  else
-    return p;
-  // return p;
+  return generate_prime_candidate(length);
 }
