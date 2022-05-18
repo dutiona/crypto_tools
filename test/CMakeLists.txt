@@ -10,7 +10,7 @@ if(PROJECT_IS_TOP_LEVEL)
   enable_testing()
 endif()
 
-add_executable(crypto_tools_test source/crypto_tools_test.cpp)
+add_executable(prime_test source/prime.cpp)
 
 include(FetchContent)
 
@@ -28,14 +28,14 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2 fmt)
 
-target_link_libraries(crypto_tools_test
+target_link_libraries(prime_test
                       PRIVATE
                       crypto_tools::crypto_tools
                       Catch2::Catch2WithMain
                       fmt
                       )
 
-target_compile_features(crypto_tools_test PRIVATE cxx_std_23)
+target_compile_features(prime_test PRIVATE cxx_std_23)
 
-add_test(NAME crypto_tools_test COMMAND crypto_tools_test)
-windows_set_path(crypto_tools_test crypto_tools::crypto_tools)
+add_test(NAME prime_test COMMAND prime_test)
+windows_set_path(prime_test crypto_tools::crypto_tools)

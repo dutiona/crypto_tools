@@ -19,7 +19,7 @@ include(cmake/variables.cmake)
 
 add_library(
     crypto_tools_crypto_tools
-    source/crypto_tools.cpp
+    source/prime.cpp
 )
 add_library(crypto_tools::crypto_tools ALIAS crypto_tools_crypto_tools)
 
@@ -65,9 +65,22 @@ FetchContent_Declare(
     GIT_TAG "v1.0.0"
 )
 
-FetchContent_MakeAvailable(expected)
+FetchContent_Declare(
+    boostorg
+    GIT_REPOSITORY https://github.com/boostorg/boost.git
+    GIT_TAG "boost-1.79.0"
+)
 
-target_link_libraries(crypto_tools_crypto_tools PUBLIC expected)
+FetchContent_Declare(
+    fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt
+    GIT_TAG "8.1.1"
+)
+
+FetchContent_MakeAvailable(expected boostorg fmt)
+
+target_link_libraries(crypto_tools_crypto_tools PUBLIC expected boost_multiprecision)
+target_link_libraries(crypto_tools_crypto_tools PRIVATE fmt boost_random)
 
 target_compile_features(crypto_tools_crypto_tools PUBLIC cxx_std_23)
 

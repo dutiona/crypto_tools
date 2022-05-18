@@ -55,12 +55,12 @@ install(
     COMPONENT crypto_tools_Development
 )
 
-install(
-    EXPORT crypto_toolsTargets
-    NAMESPACE crypto_tools::
-    DESTINATION "${crypto_tools_INSTALL_CMAKEDIR}"
-    COMPONENT crypto_tools_Development
-)
+# install(
+#     EXPORT crypto_toolsTargets
+#     NAMESPACE crypto_tools::
+#     DESTINATION "${crypto_tools_INSTALL_CMAKEDIR}"
+#     COMPONENT crypto_tools_Development
+# )
 
 if(PROJECT_IS_TOP_LEVEL)
   include(CPack)
