@@ -33,3 +33,8 @@ CRYPTO_TOOLS_EXPORT using expected_secret =
 
 CRYPTO_TOOLS_EXPORT expected_secret
 recover_secret_from_fragments(const shamir_shares_t& shares);
+
+CRYPTO_TOOLS_EXPORT
+boost::multiprecision::cpp_int divmod(const boost::multiprecision::cpp_int& n,
+                                      const boost::multiprecision::cpp_int& d,
+                                      const boost::multiprecision::cpp_int& p);

@@ -6,6 +6,14 @@
 #include <algorithm>
 #include <string>
 
+TEST_CASE("Compute divmod", "[divmod]")
+{
+  boost::multiprecision::cpp_int num("123153771853555882574203563594358837679"),
+      den("-6"), p("170141183460469231731687303715884105727");
+  [[maybe_unused]] auto ret = divmod(num, den, p);
+}
+
+/*
 TEST_CASE("Compute shamir shares", "[shares]")
 {
   using std::begin;
@@ -45,3 +53,4 @@ TEST_CASE("Compute shamir shares", "[shares]")
     }
   }
 }
+*/

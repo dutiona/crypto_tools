@@ -61,29 +61,17 @@ expected_shamir_shares compute_shamir_shares(
   return shamir_shares_t {threshold, *prime, shares};
 }
 
-static std::pair<boost::multiprecision::cpp_int, boost::multiprecision::cpp_int>
-extended_gcd(boost::multiprecision::cpp_int a, boost::multiprecision::cpp_int b)
+boost::multiprecision::cpp_int divmod(const boost::multiprecision::cpp_int& n,
+                                      const boost::multiprecision::cpp_int& d,
+                                      const boost::multiprecision::cpp_int& p)
 {
-  boost::multiprecision::cpp_int x = 0, last_x = 1, y = 1, last_y = 1;
-  while (b != 0) {
-    boost::multiprecision::cpp_int quot = a / b;
-    a = b;
-    b = a % b;
-    x = last_x - quot * x;
-    last_x = x;
-    y = last_y - quot * y;
-    last_y = y;
-  }
-  return {last_x, last_y};
-}
-
-static boost::multiprecision::cpp_int divmod(
-    const boost::multiprecision::cpp_int& n,
-    const boost::multiprecision::cpp_int& d,
-    const boost::multiprecision::cpp_int& p)
-{
-  auto [inv, _] = extended_gcd(d, p);
-  return n * inv;
+  // Compute num / den modulo prime p
+  fmt::print("[{}, {}, {}]\n", n.str(), d.str(), p.str());
+  boost::multiprecision::cpp_int ret = (n / d) % p;
+  if (ret < 0)
+    ret += p;
+  fmt::print("[{}]\n", ret.str());
+  return ret;
 }
 
 static boost::multiprecision::cpp_int lagrange_interpolate(
