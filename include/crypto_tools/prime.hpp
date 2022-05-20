@@ -7,14 +7,14 @@
 
 CRYPTO_TOOLS_EXPORT bool is_prime(const boost::multiprecision::cpp_int& n);
 
-enum class CRYPTO_TOOLS_EXPORT generate_error
+enum class CRYPTO_TOOLS_EXPORT generate_prime_error
 {
   bit_length_too_small,
   failure_after_too_many_tries
 };
 
 CRYPTO_TOOLS_EXPORT using expected_unsigned_long_long =
-    tl::expected<boost::multiprecision::cpp_int, generate_error>;
+    tl::expected<boost::multiprecision::cpp_int, generate_prime_error>;
 
 // k is the desired bit length
 CRYPTO_TOOLS_EXPORT expected_unsigned_long_long

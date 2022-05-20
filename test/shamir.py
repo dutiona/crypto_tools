@@ -60,11 +60,16 @@ def _extended_gcd(a, b):
     last_x = 1
     y = 1
     last_y = 0
+    print([a, b, x, last_x, y, last_y])
     while b != 0:
         quot = a // b
+        print([a, b, x, last_x, y, last_y, quot])
         a, b = b, a % b
+        print([a, b, x, last_x, y, last_y, quot])
         x, last_x = last_x - quot * x, x
         y, last_y = last_y - quot * y, y
+        print([a, b, x, last_x, y, last_y, quot])
+    print("---")
     return last_x, last_y
 
 
@@ -96,8 +101,12 @@ def _lagrange_interpolate(x, x_s, y_s, p):
     for i in range(k):
         others = list(x_s)
         cur = others.pop(i)
+        # print([x - o for o in others])
         nums.append(PI(x - o for o in others))
+        # print(PI(x - o for o in others))
+        # print([cur - o for o in others])
         dens.append(PI(cur - o for o in others))
+        # print(PI(x - o for o in others))
     den = PI(dens)
     num = sum([_divmod(nums[i] * den * y_s[i] % p, dens[i], p)
                for i in range(k)])
@@ -128,9 +137,9 @@ def main():
             print('  ', share)
 
     print('Secret recovered from minimum subset of shares:             ',
-          recover_secret(shares[:3]))
+          recover_secret(shares[:4]))
     print('Secret recovered from a different minimum subset of shares: ',
-          recover_secret(shares[-3:]))
+          recover_secret(shares[-4:]))
 
 
 if __name__ == '__main__':

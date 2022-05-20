@@ -20,6 +20,7 @@ include(cmake/variables.cmake)
 add_library(
     crypto_tools_crypto_tools
     source/prime.cpp
+    source/shamir.cpp
 )
 add_library(crypto_tools::crypto_tools ALIAS crypto_tools_crypto_tools)
 

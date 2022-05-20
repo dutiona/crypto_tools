@@ -1,9 +1,9 @@
-#include <string>
-
 #include <catch2/catch_all.hpp>
 #include <fmt/core.h>
 
 #include "crypto_tools/crypto_tools.hpp"
+
+#include <string>
 
 TEST_CASE("Compute prime number", "[is prime]")
 {

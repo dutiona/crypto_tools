@@ -1,14 +1,14 @@
-#include <array>
-#include <cassert>
-#include <cmath>
-#include <iostream>
-#include <random>
-
 #include "crypto_tools/prime.hpp"
 
 #include <boost/multiprecision/miller_rabin.hpp>
 #include <boost/random.hpp>
 #include <fmt/core.h>
+
+#include <array>
+#include <cassert>
+#include <cmath>
+#include <iostream>
+#include <random>
 
 /*
  * Calculate the number of trial divisions that gives the best speed in
@@ -55,7 +55,7 @@ static expected_unsigned_long_long generate_prime_candidate(unsigned bit_length,
                                                             bool safe)
 {
   if (bit_length == 0)
-    return tl::unexpected {generate_error::bit_length_too_small};
+    return tl::unexpected {generate_prime_error::bit_length_too_small};
 
   auto gen = std::mt19937_64 {std::random_device {}()};
 
@@ -64,7 +64,7 @@ static expected_unsigned_long_long generate_prime_candidate(unsigned bit_length,
       boost::random::uniform_int_distribution<boost::multiprecision::cpp_int> {
           fast_pow2(bit_length - 1), fast_pow2(bit_length)};
 
-  auto max_attempts = 100 * (std::log2(bit_length) + 1);
+  auto max_attempts = (safe ? 100 : 1) * 1000 * (std::log2(bit_length) + 1);
 
   for (unsigned i = 0; i < max_attempts; ++i) {
     boost::multiprecision::cpp_int n = dist(gen);
@@ -83,7 +83,7 @@ static expected_unsigned_long_long generate_prime_candidate(unsigned bit_length,
     }
   }
 
-  return tl::unexpected {generate_error::failure_after_too_many_tries};
+  return tl::unexpected {generate_prime_error::failure_after_too_many_tries};
 }
 
 expected_unsigned_long_long generate_large_prime(unsigned bit_length, bool safe)
