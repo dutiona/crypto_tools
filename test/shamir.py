@@ -56,15 +56,32 @@ def _extended_gcd(a, b):
     be computed via extended Euclidean algorithm
     http://en.wikipedia.org/wiki/Modular_multiplicative_inverse#Computation
     """
+    print("_extended_gcd:[a={}, b={}]".format(a, b))
     x = 0
     last_x = 1
     y = 1
     last_y = 0
     while b != 0:
         quot = a // b
-        a, b = b, a % b
-        x, last_x = last_x - quot * x, x
-        y, last_y = last_y - quot * y, y
+        # print("[quot={}]".format(quot))
+        # a, b = b, a % b
+        tmp = a
+        a = b
+        b = tmp % b
+
+        # x, last_x = last_x - quot * x, x
+        tmp = x
+        x = last_x - quot * tmp
+        last_x = tmp
+
+        # y, last_y = last_y - quot * y, y
+        tmp = y
+        y = last_y - quot * tmp
+        last_y = tmp
+
+        print("_extended_gcd:[a={}, b={}, quot={}, x={}, last_x={}, y={}, last_y={}]".format(
+            a, b, quot, x, last_x, y, last_y))
+    print("_extended_gcd:[last_x={}, last_y={}]".format(last_x, last_y))
     return last_x, last_y
 
 
@@ -74,9 +91,11 @@ def _divmod(num, den, p):
     To explain what this means, the return value will be such that
     the following is true: den * _divmod(num, den, p) % p == num
     """
-    tmp = 1 / den
+    print("_divmod:[num={}, den={}, p={}]".format(num, den, p))
     inv, _ = _extended_gcd(den, p)
-    return num * inv
+    ret = num*inv
+    print("_divmod:[num*inv={}]".format(ret))
+    return ret
 
 
 def _lagrange_interpolate(x, x_s, y_s, p):
@@ -135,4 +154,7 @@ def main():
 
 
 if __name__ == '__main__':
+    #_extended_gcd(-6, 170141183460469231731687303715884105727)
+    # _divmod(123153771853555882574203563594358837679, -
+    #        6, 170141183460469231731687303715884105727)
     main()

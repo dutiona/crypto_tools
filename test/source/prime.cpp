@@ -12,10 +12,10 @@ TEST_CASE("Compute prime number", "[is prime]")
   auto nb_primes = 0u;
   auto i = 0;
   for (int i = 0; i < 100; ++i) {
-    auto prime = generate_large_prime(bit_length);
+    auto prime = crypto_tools::generate_large_prime(bit_length);
     // fmt::print("i={}\n", i);
     if (prime) {
-      if (is_prime(*prime)) {
+      if (crypto_tools::is_prime(*prime)) {
         ++nb_primes;
         // fmt::print("<{}> prime!\n", prime->str());
       } else {
